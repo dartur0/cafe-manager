@@ -1,229 +1,210 @@
-# Left no Crumbs – Dokumentacja Techniczna i Podręcznik Użytkownika
+# Left No Crumbs – Technical Documentation & User Manual
 
-Left No Crumbs to rozbudowana, dwuwymiarowa (2D) gra zręcznościowo-strategiczna czasu rzeczywistego, stworzona w języku Python przy użyciu biblioteki Pygame. Gracz wciela się w rolę managera restauracji serwującej unikalne wyroby cukiernicze oraz napoje kofeinowe dla wymagającej, paranormalnej klienteli.
+**Left No Crumbs** is an extensive 2D real-time arcade-strategy management game built in Python using the Pygame library. The player steps into the role of a restaurant manager serving unique pastries and caffeinated beverages to a demanding, paranormal clientele.
 
-Aplikacja charakteryzuje się zaawansowaną mechaniką zarządzania czasem, dynamicznym systemem ekonomiczno-sklepowym, adaptacyjną krzywą trudności oraz pełnym pokryciem kluczowej logiki biznesowej zautomatyzowanymi testami jednostkowymi. Projekt został w pełni skonteneryzowany za pomocą narzędzia Docker i przystosowany do pracy w środowiskach bezfizycznego ekranu (headless).
+The application features advanced time-management mechanics, a dynamic shop/economic system, an adaptive difficulty curve, and comprehensive unit test coverage for core business logic. The project is fully containerized with Docker and configured to run in headless environments.
 
-## 1. Struktura Projektu
+## 1. Project Structure
 
-Architektura katalogów opiera się na ścisłym separowaniu warstwy danych i logiki biznesowej (Backend) od komponentów renderowania grafiki i obsługi zdarzeń interfejsu użytkownika (Frontend/UI).
+The directory architecture strictly separates data/business logic (Backend) from graphic rendering and UI event handling components (Frontend/UI).
 
 ```text
 cafe_manager/
-├── assets/                      # Zasoby multimedialne wykorzystywane przez grę
-│   ├── fonts/                   # Czcionki TrueType (np. Pacifico.ttf dla stylizowanego GUI)
-│   ├── images/                  # Tekstury stacji roboczych, ikon składników, ciast i kaw
-│   ├── music/                   # Ścieżka dźwiękowa i tła muzyczne poziomu
-│   └── sounds/                  # Efekty dźwiękowe (kliknięcia, parzenie kawy, dźwięk ukończenia)
-├── saves/                       # Katalog przeznaczony na trwałe pliki zapisu stanu gry
-├── src/                         # Kod źródłowy aplikacji podzielony modułowo
-│   ├── core/                    # Rdzeń silnika gry i czysta logika biznesowa
-│   │   ├── decorators/          # Implementacja modyfikatorów obiektów (Wzorzec Dekorator)
-│   │   ├── entities/            # Encje domenowe (Customer, Kitchen, Coffee, Cake, Order)
-│   │   ├── states/              # Klasy zarządzające cyklem życia ekranów (Wzorzec Stan)
-│   │   ├── systems/             # Systemy peryferyjne (SaveManager, LevelManager, SoundManager)
-│   │   └── game.py              # Główna pętla gry (Game Loop) i koordynacja podsystemów
-│   └── ui/                      # Warstwa prezentacji, komponenty i ekrany interfejsu GUI
-│       ├── components/          # Panele interaktywne (CakePanel, CoffeePanel, Button)
-│       └── screens/             # Ekrany menu głównego, sklepu oraz podsumowania dnia
-├── tests/                       # Pakiet automatycznych testów jednostkowych (Pytest)
-│   ├── test_customer.py         # Weryfikacja mechaniki cierpliwości, algorytmu napiwków i typów gości
-│   ├── test_decorators.py       # Testy poprawności obliczeń cenowych i nazw wzorca Dekorator
-│   ├── test_kitchen.py          # Weryfikacja gospodarki zasobami, limitów tacek i witryn
-│   ├── test_level.py            # Testy warunków wygranej, progresji trudności i przyznawania gwiazdek
-│   └── test_order.py            # Weryfikacja mechanizmu sprawdzania zgodności zamówień (Combo/Single)
-├── Dockerfile                   # Przepis budowania odchudzonego obrazu Linux-slim
-├── docker-compose.yml           # Deklaracja usług, wolumenów i zmiennych środowiskowych audio/wideo
-├── requirements.txt             # Ścisła lista zależności pakietów Pythona
-└── save.json                    # Serializowany stan gry tworzony automatycznie (Auto-save)
+├── assets/                      # Multimedia assets used by the game
+│   ├── fonts/                   # TrueType fonts (e.g., Pacifico.ttf for stylized GUI)
+│   ├── images/                  # Textures for workstations, ingredients, cakes, and coffees
+│   ├── music/                   # Level background music tracks
+│   └── sounds/                  # Sound effects (clicks, coffee brewing, completion sounds)
+├── saves/                       # Directory dedicated to persistent save files
+├── src/                         # Application source code organized modularly
+│   ├── core/                    # Engine core and pure business logic
+│   │   ├── decorators/          # Object modifiers implementation (Decorator Pattern)
+│   │   ├── entities/            # Domain entities (Customer, Kitchen, Coffee, Cake, Order)
+│   │   ├── states/              # Life-cycle screen management classes (State Pattern)
+│   │   ├── systems/             # Peripheral systems (SaveManager, LevelManager, SoundManager)
+│   │   └── game.py              # Main Game Loop and subsystem coordination
+│   └── ui/                      # Presentation layer, GUI components and screens
+│       ├── components/          # Interactive panels (CakePanel, CoffeePanel, Button)
+│       └── screens/             # Main menu, shop, and end-of-day summary screens
+├── tests/                       # Automated unit tests suite (Pytest)
+│   ├── test_customer.py         # Patience mechanics, tip algorithms, and customer types
+│   ├── test_decorators.py       # Decorator pattern pricing calculations and naming tests
+│   ├── test_kitchen.py          # Resource management, tray limits, and showcase tests
+│   ├── test_level.py            # Win conditions, difficulty progression, and star allocation
+│   └── test_order.py            # Order validation mechanics (Combo/Single)
+├── Dockerfile                   # Build recipe for a lightweight Linux-slim image
+├── docker-compose.yml           # Declarations for audio/video environment variables and volumes
+├── requirements.txt             # Strict Python package dependencies list
+└── save.json                    # Auto-generated serialized game state (Auto-save)
 
 ```
 
-## 2. Zależności i Wymagania Środowiskowe
+## 2. Dependencies and Environmental Requirements
 
-Aplikacja została zoptymalizowana pod kątem działania w środowiskach Python 3.12 oraz Python 3.14.
+The application is optimized for Python 3.12 and Python 3.14 runtime environments.
 
-### Zależności Pythona (plik requirements.txt):
+### Python Dependencies (`requirements.txt`):
 
-* pygame==2.6.1 – Odpowiada za niskopoziomową komunikację z bibliotekami SDL (obsługa okna graficznego, renderowanie powierzchni 2D, przetwarzanie miksera audio, obsługa zdarzeń systemowych myszy).
-* pytest==9.1.0 – Wykorzystywany do izolowanego wykonywania asercji testowych w środowisku lokalnym oraz CI/CD.
+* `pygame==2.6.1` – Handles low-level SDL communications (GUI windowing, 2D surface rendering, audio mixer processing, and system mouse events).
+* `pytest==9.1.0` – Used for isolated test assertions in local environments and CI/CD pipelines.
 
-### Wymagania systemowe dla instalacji natywnej:
+### Native System Requirements:
 
-* Linux (Ubuntu/Debian): Wymaga instalacji pakietów deweloperskich biblioteki SDL2 z poziomu menedżera pakietów Advanced Package Tool (apt): libsdl2-dev, libsdl2-image-dev, libsdl2-mixer-dev, libsdl2-ttf-dev, libfreetype6-dev.
-* macOS: Wymaga środowiska Python 3.12+ oraz ewentualnych bibliotek wsparcia zainstalowanych poprzez system Homebrew.
-* Windows: Instalacja Pygame poprzez pip automatycznie dostarcza prekompilowane biblioteki dynamiczne (DLL) SDL.
+* **Linux (Ubuntu/Debian)**: Requires development packages for SDL2 installed via `apt`: `libsdl2-dev`, `libsdl2-image-dev`, `libsdl2-mixer-dev`, `libsdl2-ttf-dev`, `libfreetype6-dev`.
+* **macOS**: Requires Python 3.12+ and optional support libraries installed via Homebrew.
+* **Windows**: Installing Pygame via `pip` automatically delivers precompiled SDL dynamic link libraries (DLLs).
 
-## 3. Architektura i Zastosowane Wzorce Projektowe
+## 3. Architecture & Design Patterns
 
-### A. Wzorzec Stan (State Pattern)
+### A. State Pattern
 
-Wzorzec ten służy do zarządzania maszyną stanów aplikacji (Finite State Machine). Klasa główna Game przechowuje instancję aktualnego stanu reprezentowanego przez obiekt polimorficzny dziedziczący po klasie bazowej GameState z pliku base_state.py. Przełączanie ekranów odbywa się bez zakłócania ciągłości głównej pętli gry.
+Manages the Finite State Machine (FSM) of the application. The main `Game` class holds an instance of the current state represented by a polymorphic object inheriting from the `GameState` base class in `base_state.py`. Screen transitions occur without interrupting the main game loop.
 
-* Implementacja: Każdy stan nadpisuje cztery kluczowe metody: on_enter() (inicjalizacja i alokacja zasobów), handle_event() (przechwytywanie wejścia użytkownika), update() (aktualizacja delty czasowej fizyki i logiki) oraz draw() (wywołanie renderowania na obiekt screen).
-* Klasy stanów:
-* MenuState: Obsługa interfejsu powitalnego oraz wyboru profilu gry.
-* DayState: Główna faza gry, zarządzanie zamówieniami oraz pracą kuchni.
-* GameoverState: Obsługa warunku przegranej, zatrzymanie czasu i wyświetlenie statystyk końcowych.
-* PauseState: Natychmiastowe wstrzymanie pętli gry bez utraty danych sesji.
-* SettingsState: Menu konfiguracji audio, wideo oraz sterowania.
-* ShopState: Zarządzanie fazą ekonomiczną i zakupem ulepszeń pomiędzy poziomami.
-* TutorialState: Wydzielony samouczek prezentujący podstawy mechaniki nowym użytkownikom.
+* **Implementation**: Every state overrides four key methods: `on_enter()` (initialization and resource allocation), `handle_event()` (user input capturing), `update()` (physics/logic time delta updating), and `draw()` (rendering onto the screen surface).
+* **State Classes**:
+* `MenuState`: Welcome interface and profile selection.
+* `DayState`: Main gameplay phase, handling customer orders and kitchen work.
+* `GameoverState`: Loss condition handling, freezing game time, and displaying final metrics.
+* `PauseState`: Instant game loop pause without session data loss.
+* `SettingsState`: Audio, display, and control configuration menu.
+* `ShopState`: Economic phase for purchasing cafe upgrades between levels.
+* `TutorialState`: Dedicated tutorial introducing game mechanics to new players.
 
+### B. Decorator Pattern
 
+Used to avoid combinatorial class explosion (deep inheritance trees) when creating complex food products with dynamic properties and pricing.
 
-### B. Wzorzec Dekorator (Decorator Pattern)
+* **Implementation**: The `BaseCake` class represents a plain sponge base with a pre-defined price. As ingredients are chosen by the player, this object is dynamically wrapped by concrete cake flavor and cream decorators.
+* **Architectural Impact**: Calling `get_price()`, `get_name()`, or `get_prep_time()` on the final object recursively traverses the decorator chain, dynamically summing component prices, appending name descriptions, and calculating baking duration based on recipe complexity.
 
-Zastosowany w celu uniknięcia eksplozji kombinatorycznej klas (dziedziczenia) przy tworzeniu złożonych produktów spożywczych o zmiennych właściwościach i cenach.
+## 4. Setup & Execution Guide
 
-* Implementacja: Klasa podstawowa BaseCake reprezentuje czysty korzec ciasta o z góry zdefiniowanej cenie bazowej. W momencie wyboru składników przez gracza, obiekt ten jest dynamicznie opakowywany przez konkretne dekoratory smaku ciasta oraz dekoratory kremów.
-* Konsekwencje architektoniczne: Wywołanie metody get_price(), get_name() lub get_prep_time() na obiekcie finalnym powoduje rekurencyjne przejście po strukturze dekoratorów, dynamicznie sumując ceny poszczególnych komponentów, modyfikując ciąg znaków nazwy oraz obliczając finalny czas pieczenia w zależności od stopnia skomplikowania przepisu.
+### Option A: Local Execution (Native Environment)
 
-
-## 4. Instrukcja Uruchomienia i Konfiguracji
-
-### Opcja A: Uruchomienie lokalne (Środowisko Natywne)
-
-1. Upewnij się, że w systemie zainstalowany jest interpreter języka Python w wersji minimum 3.12.
-2. Otwórz konsolę/terminal w głównym katalogu projektu cafe_manager i zainstaluj wymagane pakiety:
-
+1. Ensure Python 3.12 or higher is installed on your system.
+2. Open a terminal in the root directory of `cafe_manager` and install dependencies:
 ```bash
 pip install -r requirements.txt
 
 ```
 
-3. Uruchom punkt wejścia aplikacji:
-
+3. Run the application entry point:
 ```bash
 python src/core/game.py
 
 ```
 
-### Opcja B: Uruchomienie w kontenerze Docker (Środowisko Izolowane)
+### Option B: Docker Container Execution (Isolated / Headless Environment)
 
-Obraz kontenera został oparty na minimalistycznej dystrybucji python:3.12-slim. W celu umożliwienia poppingu działania gry w środowisku bez dostępu do fizycznej karty graficznej i dźwiękowej (np. na serwerze integracyjnym CI), w architekturze kontenera zastosowano:
+The container image is built on a minimal `python:3.12-slim` distribution. To allow the game to run without physical GPU or sound card access (e.g., in CI environments), the container incorporates:
 
-* Xvfb (X Virtual Framebuffer): Wirtualny serwer X11, który symuluje obecność monitora o rozdzielczości 1280x720 z 24-bitową głębią kolorów w pamięci RAM.
-* Zmienną środowiskową SDL_AUDIODRIVER=dummy: Przekierowuje zapytania miksera dźwiękowego Pygame do wirtualnej platformy bezdźwiękowej, zapobiegając krytycznemu błędowi pygame.error: mixer not initialized.
+* **Xvfb (X Virtual Framebuffer)**: Virtual X11 server simulating a 1280x720 24-bit depth display in RAM.
+* **Environment variable `SDL_AUDIODRIVER=dummy**`: Redirects Pygame mixer calls to a dummy audio driver, preventing `pygame.error: mixer not initialized` crashes.
 
-1. Uruchom oficjalne środowisko wykonawcze Docker Desktop na swoim komputerze.
-2. Przeprowadź proces budowania obrazu na podstawie instrukcji z pliku Dockerfile:
-
+1. Launch Docker Desktop on your machine.
+2. Build the Docker image:
 ```bash
 docker compose build
 
 ```
 
-3. Uruchom usługę w trybie odizolowanym (detachment mode), co zainicjalizuje proces gry na wirtualnym ekranie w tle:
-
+3. Run the service in detached mode (initiates the game loop on a virtual display in the background):
 ```bash
 docker compose up -d
 
 ```
 
-4. Aby wyłączyć kontener i zwolnić zasoby systemowe komputera, wykonaj:
-
+4. Stop the container and free system resources:
 ```bash
 docker compose down --remove-orphans
 
 ```
 
+## 5. Automated Unit Testing
 
-## 5. Zautomatyzowane Testy Jednostkowe
+The application features unit test coverage divided across 5 test modules in the `tests/` directory.
 
-Aplikacja posiada rygorystyczne pokrycie kodu testami jednostkowymi, podzielonymi na 5 logicznych modułów testowych w katalogu tests/.
-
-### Wykonanie testów w środowisku lokalnym:
-
+* **Execute tests locally**:
 ```bash
 PYTHONPATH=src pytest tests/
 
 ```
 
-### Wykonanie testów wewnątrz kontenera Docker:
-
+* **Execute tests inside Docker**:
 ```bash
 docker compose run game bash -c "PYTHONPATH=src python3 -m pytest tests/"
 
 ```
 
-*Prawidłowy wynik operacji to komunikat: ============================= 45 passed in ...s =============================, zaświadczający o braku regresji w logice biznesowej gry.*
+
+*A successful run returns: `============================= 45 passed in ...s =============================`.*
 
 
-## 6. Instrukcja dla Użytkownika
+## 6. User Manual & Controls
 
-### Cel Rozgrywki
+### Objective
 
-Gracz staje przed wyzwaniem przetrwania kolejnych dni roboczych w kawiarni. Każdy dzień definiuje cel główny (np. Serve 5 customers – Obsłuż 5 klientów). Nad głowami pojawiających się gości wyświetlają się dymki z precyzyjnymi zamówieniami (kawa o określonym typie mleka, ciasto o konkretnej bazie i kremie lub zestawy Combo).
+Survival through consecutive working days at the cafe. Each day sets a primary goal (e.g., *Serve 5 customers*). Speech bubbles over incoming customers indicate their exact orders (coffee type, milk option, cake base, cream topping, or combo sets).
 
-Gracz musi zarządzać surowcami, kolejką kuchenną oraz czasem reakcji. Jeśli pasek cierpliwości klienta spadnie do zera, opuszcza on lokal, generując stratę finansową i uniemożliwiając zdobycie kompletu gwiazdek.
+Players must manage raw ingredients, kitchen queues, and response time. If a customer's patience meter drops to zero, they leave, causing financial loss and preventing a 3-star level rating.
 
-### Pierwsze Kroki po Uruchomieniu
+### Getting Started
 
-1. Ekran Menu Głównego: Użytkownik ma do wyboru interaktywne opcje sterowane za pomocą kliknięć myszy:
-* PLAY: Wczytuje ostatni stan rozgrywki z pliku zapisu (jeśli istnieje) i przenosi do aktualnego dnia.
-* NEW GAME: Nadpisuje dotychczasowe postępy, przyznaje stan początkowy (0.00 monet) i uruchamia Dzień 1.
-* TUTORIAL: Uruchamia stan samouczka wyjaśniający rozkład elementów graficznych.
-* SETTINGS: Otwiera panel konfiguracji głośności efektów oraz muzyki.
-* SHOP: Skrót dający bezpośredni dostęp do panelu ulepszeń kawiarni.
-* END: Bezpieczne zamknięcie aplikacji, czyszczenie pamięci podręcznej i wyjście do systemu operacyjnego.
-
-
-2. Po kliknięciu PLAY lub NEW GAME gra inicjuje stan DayState.
-
-### Obsługa Interfejsu i Wykonywanie Operacji
-
-#### A. Klienci (Stanowiska przy ladzie)
-
-* W kawiarni może przebywać jednocześnie do 4 klientów. Każdy z nich posiada indywidualny, widoczny pasek cierpliwości.
-* Zadaniem gracza jest przygotowanie i wydanie zamówienia zanim czas wskaźnika cierpliwości upłynie.
-
-#### B. Stacja Kawowa / Parzenie Kawy (Lewy Panel Interfejsu)
-
-1. Wybór Rodzaju Napoju: Kliknij przycisk "ESP" (czyste, esencjonalne Espresso) lub "MILK" (Kawa mleczna). W pierwszej kolejności należy zaparzyć bazę espresso.
-2. Dodanie Mleka (Wymagane tylko dla opcji MILK): Kliknij na jedną z trzech ikon kartonów mleka znajdujących się poniżej: REG (zwykłe mleko), LACT_FR (mleko bezlaktozowe), OAT (mleko owsiane). Jeśli wybierzesz Espresso, wybór mleka zostanie zablokowany automatycznie.
-3. Uruchomienie Ekspresu Ciśnieniowego: Kliknij przycisk z napisem "BREW".
-* Napój pojawi się na jednej z trzech tacek ekspresu, prezentując cyfrowy czas parzenia oraz miniaturowy pasek postępu.
-* Ukończenie parzenia sygnalizowane jest zielonym wskaźnikiem "OK" oraz dedykowanym efektem dźwiękowym.
+1. **Main Menu Options**:
+* **PLAY**: Loads the latest saved state from file and resumes the current day.
+* **NEW GAME**: Resets progress, sets initial balance to $0.00, and starts Day 1.
+* **TUTORIAL**: Opens an interactive overview explaining UI layout and mechanics.
+* **SETTINGS**: Configures music and sound effects volume levels.
+* **SHOP**: Direct shortcut to the upgrade store.
+* **END**: Safely closes the application and frees memory.
 
 
-4. Ekspozycja na Witrynie: Kliknij na filiżankę ze statusem "OK". Kawa powędruje na witrynę wystawową.
+2. Clicking **PLAY** or **NEW GAME** initializes the `DayState`.
 
-#### C. Stacja Cukiernicza / Przygotowanie Ciasta (Prawy Panel Interfejsu)
+### Interface Controls & Operations
 
-1. Wybór Bazy Ciasta: W górnej sekcji panelu kliknij lewym przyciskiem myszy na ikonę odpowiadającą pożądanemu smakowi korca (VANILLA, CHOC - czekoladowy, RED - czerwony aksamit, CARROT - marchewkowy). Wybrany komponent zostanie podświetlony zieloną ramką.
-2. Wybór Kremu: W rzędzie poniżej wybierz rodzaj pokrycia kremowego (VANILLA, CHOC, STRAWB - truskawkowy, BANANA, BLUEB - jagodowy, PISTACH - pistacjowy).
-3. Inicjalizacja Procesu Pieczenia: Po wybraniu bazy i dodaniu kremu kliknij na jeden z wolnych prostoktnych Slotów Kuchennych (zlokalizowanych w dolnej-środkowej części ekranu).
-* Slot zostanie zablokowany, a na ekranie pojawi się numeryczne odliczanie czasu pozostałego do upieczenia.
-* Po zakończeniu procesu na slocie pojawi się zielona obwódka i napis "READY".
+#### A. Customers (Counter Station)
 
+* Up to 4 customers can visit the counter simultaneously. Each has an individual patience bar.
+* Prepare and serve their orders before their patience meter expires.
 
-4. Ekspozycja na Witrynie: Kliknij na gotowy slot z napisem "READY". Ciasto zostanie automatycznie przetransportowane na szklaną witrynę wystawową.
+#### B. Coffee Station / Coffee Preparation (Left Panel)
 
-#### D. Witryna i Wydawanie Zamówień (Środek Ekranu)
+1. **Choose Drink Base**: Click **ESP** (Espresso) or **MILK** (Milk-based coffee).
+2. **Add Milk** *(Required for MILK option only)*: Select one of three milk cartons below: **REG** (Regular), **LACT_FR** (Lactose-free), or **OAT** (Oat milk). Espresso automatically disables milk selection.
+3. **Start Espresso Machine**: Click **BREW**. The drink appears on one of three espresso machine trays with a brewing timer. Completion is signaled by a green **OK** badge and audio cue.
+4. **Place on Display**: Click the finished coffee cup marked **OK** to move it to the display showcase.
 
-* Gotowe produkty oczekują na wydanie w sekcji witryny wystawowej.
-* Jeżeli na Twojej witrynie znajduje się produkt dokładnie odpowiadający preferencjom klienta wyświetlanym w dymku nad jego głową, kliknij bezpośrednio na postać tego klienta.
-* Logika gry automatycznie pobierze właściwy produkt z witryny, usunie klienta z lady, zwolni slot dla kolejnego gościa, a na konto gracza wpłynie cena produktu powiększona o dynamicznie wyliczony napiwek.
+#### C. Cake Station / Pastry Preparation (Right Panel)
 
-#### E. Kontrola Magazynu i Logistyka (Przycisk REFILL)
+1. **Select Cake Base**: Click a flavor icon in the upper row (**VANILLA**, **CHOC**, **RED** Velvet, **CARROT**).
+2. **Select Cream Topping**: Click a topping icon in the second row (**VANILLA**, **CHOC**, **STRAWB**, **BANANA**, **BLUEB**, **PISTACH**).
+3. **Start Baking**: Click an open **Kitchen Slot** in the bottom-center panel. A countdown timer displays baking progress. Once finished, a green border and **READY** label appear.
+4. **Place on Display**: Click the completed slot with **READY** to transfer the cake to the display showcase.
 
-* Każde użycie ziaren kawy, bazy ciasta czy porcji kremu trwale pomniejsza zasoby kawiarni. Aktualny stan ilościowy wyświetla się w formie liczbowej (np. x3, Cream: 10/10) bezpośrednio na panelach.
-* W przypadku braku surowca, system zablokuje produkcję, wyświetlając komunikat ostrzegawczy na konsoli debugowania.
-* Aby uzupełnić zasoby, kliknij przycisk "REFILL" umieszczony w dolnej części ekranu. Spowoduje to natychmiastowe, darmowe odnowienie wszystkich zapasów magazynowych do ich maksymalnych limitów pojemnościowych.
+#### D. Showcase & Order Fulfillment (Center Screen)
 
-#### F. Warunki Progresu i Gwiazdki (Shop Phase)
+* Ready products sit on the display showcase.
+* When a showcased item matches a customer's order bubble, click directly on that **Customer**.
+* The item is automatically deducted from the showcase, the customer leaves satisfied, and payment plus a dynamic tip is added to your balance.
 
-* Do ukończenia dnia wymagane jest zrealizowanie celu dobowego (obsłużenie wskazanej liczby gości).
-* Poziom zadowolenia obsłużonych klientów (zależny od czasu oczekiwania) bezpośrednio przekłada się na liczbę przyznanych gwiazdek na koniec dnia (skala od 0 do 3).
-* Po udanym zakończeniu dnia roboczego następuje automatyczne przejście do ekranu ShopState, gdzie za zarobione pieniądze gracz może dokonać ulepszeń technicznych: kupić dodatkowe sloty kuchenne, zwiększyć pojemność zbiornika na krem lub odblokować unikalne przepisy. Zakupione ulepszenia trwale modyfikują logikę i interfejs gry od następnego dnia.
+#### E. Inventory Management (REFILL Button)
 
+* Using coffee beans, cake bases, or cream toppings consumes inventory stock (displayed as `x3` or `Cream: 10/10`).
+* If an ingredient runs out, production is blocked.
+* Click the **REFILL** button at the bottom of the screen to instantly restock all ingredients to maximum capacity at no cost.
 
-## 7. System Trwałości Danych (Zapis i Wczytywanie)
+#### F. Level Progression & Shop Phase
 
-Gra posiada w pełni zautomatyzowany, przezroczysty dla użytkownika system automatycznego zapisu stanu (Auto-save).
+* Reaching the daily customer quota completes the day.
+* Customer satisfaction affects the star rating awarded (0 to 3 stars).
+* Completing a day transitions into the `ShopState`, where earned money buys technical upgrades: extra kitchen slots, increased cream tank capacities, or new recipe unlocks.
 
-* Format Danych: Stan gry jest serializowany do zunifikowanego formatu maszynowego JSON i zapisywany w pliku tekstowym save.json w głównym katalogu aplikacji.
-* Moment Zapisu: Procedura zapisu wywoływana jest automatycznie w dwóch kluczowych momentach: w ułamku sekundy po pomyślnym zatwierdzeniu zakończenia dnia roboczego oraz natychmiast po wyjściu z panelu sklepu ulepszeń.
-* Zakres Zapisu: Plik przechowuje informacje o numerze bieżącego poziomu (day), całkowitym stanie konta bankowego gracza (money), tablicę unikalnych identyfikatorów zakupionych ulepszeń (purchased) oraz historię zdobytych gwiazdek.
-* Moduł SaveManager dba o to, by przy nagłym zamknięciu aplikacji użytkownik mógł bezstresowo powrócić do zarządzania kawiarnią bez utraty wypracowanych postępów.
+## 7. Data Persistence (Save & Load System)
+
+The game includes an automated, transparent auto-save system.
+
+* **Format**: State data is serialized into unified JSON format in `save.json`.
+* **Save Triggers**: Saves automatically upon successful day completion and upon exiting the shop menu.
+* **Stored Scope**: Tracks current level (`day`), total funds (`money`), array of purchased upgrade IDs (`purchased`), and star history.
+* **`SaveManager`** ensures seamless progress recovery in case of unexpected application closure.
