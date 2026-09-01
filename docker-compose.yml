@@ -1,0 +1,8 @@
+services:
+  game:
+    build: .
+    environment:
+      - DISPLAY=:99
+      - SDL_AUDIODRIVER=dummy
+    volumes:
+      - ./saves:/app/saves
